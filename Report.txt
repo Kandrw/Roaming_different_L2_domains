@@ -1,0 +1,181 @@
+
+Тема
+    Реализация процедуры роуминга 802.11r over DS для точек доступа в разных L2-доменах
+
+https://github.com/Kandrw/Roaming_different_L2_domains
+
+
+
+
+    Установка компонентов
+
+sudo apt install iw
+sudo apt install isc-dhcp-server
+apt install bridge-utils
+
+apt install arping
+apt install iputils-arping
+
+    Зависимости
+sudo apt install libnl-3-dev
+sudo apt install libnl-genl-3-dev
+sudo ldconfig
+    Настройка(Подготовка?)
+
+
+iw dev wlan0 interface add wlan0_1 type managed
+iw dev wlan0 interface add wlan0_2 type managed
+
+    Настройка системы
+
+исключить интерфейсы из списка управления
+nano /etc/NetworkManager/NetworkManager.conf
+
+    Настройка интерфейсов
+
+Для перевода интерфейсов в режим ap, нужно сначала исключить нужные интерфейсы из управления NetworkManager
+    nano /etc/NetworkManager/NetworkManager.conf
+        wlx90de8083b88b - 90:de:80:83:b8:8b
+        wlx90de807a7513 - 90:de:80:7a:75:13
+        unmanaged-devices=mac:90:de:80:83:b8:8b;mac:90:de:80:7a:75:13
+    Перезапуск для применения изменений
+        sudo systemctl restart NetworkManager
+    Проверить статус
+        nmcli device status
+    Перевод интерфейсов в режим ap
+        iw dev wlx90de807a7513 set type ap
+        iw dev wlx90de8083b88b set type ap
+    
+    Посмотреть статус интерфейсов
+        iwconfig wlx90de807a7513
+        iwconfig wlx90de8083b88b
+
+
+    Проверить подключенных клиентов
+        ./hostapd_cli -i wlx90de8083b88b all_sta
+        ./hostapd_cli -i wlx90de807a7513  all_sta
+
+
+
+    Сборка
+
+        hostapd
+            make
+
+    Остановить прочии сервисы мещающие работе hostapd
+systemctl stop NetworkManager
+systemctl stop wpa_supplicant
+
+
+
+
+    Запуск
+
+hostapd -B /path/to/your/hostapd.conf
+
+
+    Статус
+
+./hostapd_cli all_sta
+
+
+
+    Прочее
+
+systemctl status NetworkManager
+
+
+
+
+
+команды
+
+
+    iw dev wlx90de807a7513 set type ap
+
+
+    ifconfig wlx90de807a7513 down
+    iwconfig wlx90de807a7513 mode monitor (managed - клиент)
+    ifconfig wlx90de807a7513 up
+
+    nmcli device wifi list # видимые сети
+
+    nmcli device wifi connect "ELTX-2.4GHz_WiFi_62B8" password "GP30002950" ifname wlx90de807a7513  (поменьше)
+
+    nmcli device wifi connect "ELTX-2.4GHz_WiFi_62B8" password "GP30002950" ifname wlx90de807a7513
+
+    96178379 - MTS
+
+    ip link set wlan0_1 down
+    ip link delete wlan0_1
+
+
+    iw dev wlp0s20f3 interface add wlan0 type __ap
+    ip link set wlp0s20f3 down
+    ip link set wlan0 up
+
+    iw dev wlan0 station dump
+
+    очистить arp
+    ip neigh flush all
+
+    arp -s 10.0.1.40 04:e5:98:f4:74:a8
+    sudo ip neigh add 10.0.1.40 lladdr 04:e5:98:f4:74:a8 dev wlan0
+
+
+    отправить пинг вручную
+    arping -I wlan0 10.0.1.40
+
+    iw dev wlan0 info
+        Interface wlan0
+            ifindex 8
+            wdev 0x4
+            addr b0:dc:ef:9f:4c:49
+            ssid iCanHearYouHavingSex
+            type AP
+            wiphy 0
+            channel 1 (2412 MHz), width: 20 MHz, center1: 2412 MHz
+            txpower 22.00 dBm
+            multicast TXQ:
+                    qsz-byt qsz-pkt flows   drops   marks   overlmt hashcol tx-bytes        tx-packets
+                    0       0       0       0       0       0       0       0               0
+
+    iwconfig wlan0_1
+        wlan0_1   IEEE 802.11  ESSID:off/any
+            Mode:Managed  Access Point: Not-Associated
+            Retry short limit:7   RTS thr:off   Fragment thr:off
+            Encryption key:off
+            Power Management:on
+
+
+
+
+    Ресурсы
+
+Памятка по Wi-Fi в Linux: подсказки и решение проблем
+https://hackware.ru/?p=12551
+
+Виртуальные Wi-Fi интерфейсы для одновременного использования Wi-Fi адаптера в разных режимах
+https://hackware.ru/?p=15858
+    Выполните следующую команду для вывода полного списка возможностей всех ваших беспроводных интерфейсов:
+    1
+
+    iw list
+
+    Поищите следующие строки:
+
+        software interface modes (can always be added) — программные режимы интерфейсов (всегда могут быть добавлены)
+        valid interface combinations — возможные комбинации интерфейсов
+
+Установка hostapd из исходников
+https://www.dr.arut.ru/ustanovka-hostapd-iz-ishodnikov/
+
+
+Как перевести беспроводную карту в режим монитора (контроля) в Kali Linux
+https://hackware.ru/?p=60
+
+
+
+
+
+
