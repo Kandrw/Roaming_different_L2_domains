@@ -7,7 +7,7 @@
 
 
 
-PATH_HOSTAPD=./hostapd-2.11/hostapd
+PATH_HOSTAPD=../hostapd-2.11/hostapd
 
 
 #PID_FILE=/run/hostapd.($1).pid
@@ -28,8 +28,8 @@ while getopts "ud" OPTION; do
     case $OPTION in
     u)
         #sudo $PATH_SERVICE/$SERVICE -dd -P $PID_FILE -B $CONFIG_STARTUP -f /home/andrey/hostapd.log
-        start_hostapd wlx90de807a7513 ./config/hostapd_iface1.conf 10.0.1.1
-        start_hostapd wlx90de8083b88b ./config/hostapd_iface2.conf 10.0.2.1
+        start_hostapd wlx90de807a7513 ./config/hostapd/hostapd_iface1.conf 10.0.1.1
+        start_hostapd wlx90de8083b88b ./config/hostapd/hostapd_iface2.conf 10.0.2.1
         ps | grep hostapd | grep -v grep
         systemctl restart isc-dhcp-server
     ;;

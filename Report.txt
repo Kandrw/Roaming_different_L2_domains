@@ -55,6 +55,10 @@ nano /etc/NetworkManager/NetworkManager.conf
         ./hostapd_cli -i wlx90de8083b88b all_sta
         ./hostapd_cli -i wlx90de807a7513  all_sta
 
+    Настройка пересылки 
+        /etc/sysctl.conf
+            net.ipv4.ip_forward = 1
+        sudo sysctl -p
 
 
     Сборка
@@ -62,7 +66,7 @@ nano /etc/NetworkManager/NetworkManager.conf
         hostapd
             make
 
-    Остановить прочии сервисы мещающие работе hostapd
+    Остановить прочии сервисы мешающие работе hostapd
 systemctl stop NetworkManager
 systemctl stop wpa_supplicant
 
@@ -85,18 +89,29 @@ hostapd -B /path/to/your/hostapd.conf
 systemctl status NetworkManager
 
 
+Подключение
+sudo iwlist wlp0s20f3 scan
 
+nmcli device wifi list
+nmcli device wifi connect "A_Test_network" password "password" ifname wlp0s20f3
+nmcli device wifi connect "A_Test_network_2" password "password" ifname wlp0s20f3
+
+
+journalctl -u hostapd
 
 
 команды
+
+    просмотр блокировок
+    rfkill list
 
 
     iw dev wlx90de807a7513 set type ap
 
 
-    ifconfig wlx90de807a7513 down
-    iwconfig wlx90de807a7513 mode monitor (managed - клиент)
-    ifconfig wlx90de807a7513 up
+    ifconfig wlp0s20f3 down
+    iwconfig wlp0s20f3 mode monitor (managed - клиент)
+    ifconfig wlp0s20f3 up
 
     nmcli device wifi list # видимые сети
 
@@ -147,7 +162,10 @@ systemctl status NetworkManager
             Encryption key:off
             Power Management:on
 
+мониторинг эфира
 
+    Сортировка биконов
+        wlan.fc.type_subtype == 0x08
 
 
     Ресурсы
@@ -174,7 +192,25 @@ https://www.dr.arut.ru/ustanovka-hostapd-iz-ishodnikov/
 Как перевести беспроводную карту в режим монитора (контроля) в Kali Linux
 https://hackware.ru/?p=60
 
+Compile Latest hostapd v2.3 on Raspberry Pi, Banana Pi, ODROID, etc.
+https://quadfinity.blogspot.com/2014/09/compile-latest-hostapd-v2.3-on-Raspberry-Pi-or-ODROID.html
 
+Виртуальный сетевой интерфейс
+https://habr.com/ru/companies/ua-hosting/articles/269987/
+
+
+
+
+
+Отчет
+    Что и зачем нужно
+    Какие есть решения
+    Описание своего решения 
+
+
+В контексте 802.11r, Over-DS позволяет передавать данные между точками доступа через инфраструктуру сети.
+Это означает, что когда устройство перемещается, оно может оставаться подключенным к сети,
+даже если оно переключается между различными точками доступа.
 
 
 
