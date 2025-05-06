@@ -21,6 +21,7 @@ PATH_HOSTAPD=./hostap/hostapd
 
 
 
+
 start_hostapd() {
     PID_FILE=/run/hostapd.$1.pid
     LOG_FILE=/home/andrey/hostapd_$1.log

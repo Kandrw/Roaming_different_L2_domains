@@ -8,7 +8,7 @@ https://github.com/Kandrw/Roaming_different_L2_domains
 
 
     Установка компонентов
-
+apt install ethtool
 sudo apt install iw
 sudo apt install isc-dhcp-server
 apt install bridge-utils
@@ -62,6 +62,11 @@ nano /etc/NetworkManager/NetworkManager.conf
 
 
     Сборка
+        dhcp server
+            git clone https://github.com/isc-projects/dhcp
+            cd dhcp
+            ./configure
+            make
 
         hostapd
             make
@@ -108,6 +113,7 @@ journalctl -u hostapd
 
     iw dev wlx90de807a7513 set type ap
 
+    hostapd_cli -i wlx90de807a7513 status
 
     ifconfig wlp0s20f3 down
     iwconfig wlp0s20f3 mode monitor (managed - клиент)
@@ -137,6 +143,9 @@ journalctl -u hostapd
     arp -s 10.0.1.40 04:e5:98:f4:74:a8
     sudo ip neigh add 10.0.1.40 lladdr 04:e5:98:f4:74:a8 dev wlan0
 
+    Подробно об оборудовании
+        lshw -C network
+        ethtool -i wlx90de8083b88b
 
     отправить пинг вручную
     arping -I wlan0 10.0.1.40
@@ -161,6 +170,52 @@ journalctl -u hostapd
             Retry short limit:7   RTS thr:off   Fragment thr:off
             Encryption key:off
             Power Management:on
+    Узнать phy у интерфейса
+        iw dev
+            phy#2
+                    Interface wlx90de8083b88b
+                            ifindex 188
+                            wdev 0x200000001
+                            addr 90:de:80:83:b8:8b
+                            type managed
+                            txpower 0.00 dBm
+                            multicast TXQ:
+                                    qsz-byt qsz-pkt flows   drops   marks   overlmt hashcol tx-bytes        tx-packets
+                                    0       0       0       0       0       0       0       0               0
+            phy#1
+                    Interface wlx90de807a7513
+                            ifindex 187
+                            wdev 0x100000001
+                            addr 90:de:80:7a:75:13
+                            type managed
+                            txpower 0.00 dBm
+                            multicast TXQ:
+                                    qsz-byt qsz-pkt flows   drops   marks   overlmt hashcol tx-bytes        tx-packets
+                                    0       0       0       0       0       0       0       0               0
+            phy#0
+                    Unnamed/non-netdev interface
+                            wdev 0x3
+                            addr b0:dc:ef:9f:4c:47
+                            type P2P-device
+                    Interface wlp0s20f3
+                            ifindex 3
+                            wdev 0x1
+                            addr b0:dc:ef:9f:4c:46
+                            ssid MTSRouter_5G_B629
+                            type managed
+                            channel 157 (5785 MHz), width: 80 MHz, center1: 5775 MHz
+                            txpower 22.00 dBm
+                            multicast TXQ:
+                                    qsz-byt qsz-pkt flows   drops   marks   overlmt hashcol tx-bytes        tx-packets
+                                    0       0       0       0       0       0       0       0               0
+
+    Принадлежность сетевому пространству имен
+        iw phy phy2 set netns name ns1
+        
+    Переместить беспроводной интерфейс в сетевое пространство имен
+         ip netns exec ns2 iw phy phy2 set netns name ns1
+
+
 
 мониторинг эфира
 
@@ -214,4 +269,48 @@ https://habr.com/ru/companies/ua-hosting/articles/269987/
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+dmesg | grep wlx90de807a7513
+[ 2973.276012] rtw_8821cu 3-5:1.0 wlx90de807a7513: renamed from wlan0
+
+
+https://github.com/lwfinger/rtw88/issues/151
+https://github.com/morrownr/USB-WiFi/blob/main/home/AP_Mode/Bridged_Wireless_Access_Point.md
+
+
+https://unix.stackexchange.com/questions/709069/hostapd-i-want-wpa3-only-but-enable-wep
+
+
+
+
+
+
+
+
+
+
+CONFIG_IEEE80211R_AP
+
+
+добавил флаг 
+    CONFIG_IEEE80211R_AP_L2_DIFFERENT_DOMAINS
+
+
+
+
+https://www.cisco.com/c/en/us/td/docs/wireless/controller/technotes/80211r-ft/b-80211r-dg.html
 
