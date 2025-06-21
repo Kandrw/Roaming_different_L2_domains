@@ -1,0 +1,184 @@
+
+
+
+
+
+
+> status
+bssid=50:4f:3b:cc:9f:aa
+freq=2412
+ssid=A_Test_network
+id=1
+mode=station
+wifi_generation=4
+pairwise_cipher=CCMP
+group_cipher=CCMP
+key_mgmt=FT-PSK
+wpa_state=COMPLETED
+ip_address=192.168.1.144
+address=90:de:80:7a:75:13
+uuid=4400c9be-ac4a-5ca1-8660-6e719e6b1b26
+<3>CTRL-EVENT-SCAN-RESULTS
+
+root@OpenWrt:~# iw dev wlan02g station dump
+Station 90:de:80:7a:75:13 (on wlan02g)
+        inactive time:  1190 ms
+        rx bytes:       3722
+        rx packets:     121
+        tx bytes:       1113
+        tx packets:     6
+        tx retries:     2
+        tx failed:      2
+        rx drop misc:   1
+        signal:         -22 [-27, -23] dBm
+        signal avg:     -21 [-26, -22] dBm
+        tx bitrate:     6.0 MBit/s
+        tx duration:    3033 us
+        rx bitrate:     65.0 MBit/s MCS 7
+        rx duration:    164874 us
+        last ack signal:-20 dBm
+        avg ack signal: -20 dBm
+        airtime weight: 256
+        authorized:     yes
+        authenticated:  yes
+        associated:     yes
+        preamble:       short
+        WMM/WME:        yes
+        MFP:            no
+        TDLS peer:      no
+        DTIM period:    2
+        beacon interval:100
+        short preamble: yes
+        short slot time:yes
+        connected time: 66 seconds
+        associated at [boottime]:       91356.984s
+        associated at:  1747575459722 ms
+        current time:   1747575525138 ms
+
+
+
+
+
+> all_sta
+90:de:80:7a:75:13
+flags=[AUTH][ASSOC][AUTHORIZED][SHORT_PREAMBLE]
+aid=1
+capability=0x1431
+listen_interval=5
+supported_rates=02 04 0b 16 0c 12 18 24 30 48 60 6c
+timeout_next=NULLFUNC POLL
+dot11RSNAStatsSTAAddress=90:de:80:7a:75:13
+dot11RSNAStatsVersion=1
+dot11RSNAStatsSelectedPairwiseCipher=00-0f-ac-4
+dot11RSNAStatsTKIPLocalMICFailures=0
+dot11RSNAStatsTKIPRemoteMICFailures=0
+wpa=2
+AKMSuiteSelector=00-0f-ac-4
+hostapdWPAPTKState=11
+hostapdWPAPTKGroupState=0
+hostapdMFPR=0
+rx_packets=41
+tx_packets=2
+rx_bytes=1378
+tx_bytes=430
+inactive_msec=263
+signal=-25
+rx_rate_info=0
+tx_rate_info=180
+connected_time=37
+supp_op_classes=51515354737475767778797a7b7c7d7e7f808182
+min_txpower=0
+max_txpower=20
+ext_capab=00000a0201404040000120
+
+
+
+
+
+
+
+
+wlx90de807a7513: Control interface command 'FT_DS 50:4f:3b:cc:9f:aa'
+CTRL_IFACE FT_DS 50:4f:3b:cc:9f:aa
+FT: Request over-the-DS with 50:4f:3b:cc:9f:aa
+Get randomness: len=32 entropy=0
+nl80211: Send Action frame (ifindex=26, freq=2437 MHz wait=0 ms no_cck=0 offchanok=1)
+nl80211: CMD_FRAME freq=2437 wait=0 no_cck=0 no_ack=0 offchanok=1
+CMD_FRAME - hexdump(len=177): d0 00 00 00 b0 dc ef 9f 4c 46 90 de 80 7a 75 13 b0 dc ef 9f 4c 46 00 00 06 01 90 de 80 7a 75 13 50 4f 3b cc 9f aa 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 15 21 2e d3 3b a2 42 e7 9f 82 a2 a5 11 dc 76 28 36 03 ab cd 01 37 5c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 d9 b6 19 a5 7e 9e 09 f7 73 90 8d 11 7b 19 65 52 2d 94 d5 11 2f fc d4 fa 92 17 b9 8e d2 b2 ed 51 03 08 67 69 67 61 62 79 74 65
+nl80211: Frame TX command accepted; cookie 0x17
+CTRL-DEBUG: ctrl_sock-sendto: sock=12 sndbuf=212992 outq=0 send_len=3
+nl80211: Event message available
+nl80211: Drv Event 60 (NL80211_CMD_FRAME_TX_STATUS) received for wlx90de807a7513
+nl80211: MLME event 60 (NL80211_CMD_FRAME_TX_STATUS) on wlx90de807a7513(90:de:80:7a:75:13) A1=b0:dc:ef:9f:4c:46 A2=90:de:80:7a:75:13
+nl80211: MLME event frame - hexdump(len=177): d0 00 00 00 b0 dc ef 9f 4c 46 90 de 80 7a 75 13 b0 dc ef 9f 4c 46 00 00 06 01 90 de 80 7a 75 13 50 4f 3b cc 9f aa 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 15 21 2e d3 3b a2 42 e7 9f 82 a2 a5 11 dc 76 28 36 03 ab cd 01 37 5c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 d9 b6 19 a5 7e 9e 09 f7 73 90 8d 11 7b 19 65 52 2d 94 d5 11 2f fc d4 fa 92 17 b9 8e d2 b2 ed 51 03 08 67 69 67 61 62 79 74 65
+nl80211: Frame TX status event A1=b0:dc:ef:9f:4c:46 stype=13 cookie=0x17 ack=1
+nl80211: Frame TX status: cookie=0x17 (match) (ack=1)
+wlx90de807a7513: Event TX_STATUS (16) received
+wlx90de807a7513: EVENT_TX_STATUS dst=b0:dc:ef:9f:4c:46 type=0 stype=13
+Off-channel: Ignore Action TX status - no pending operation
+nl80211: Event message available
+nl80211: BSS Event 59 (NL80211_CMD_FRAME) received for wlx90de807a7513
+nl80211: MLME event 59 (NL80211_CMD_FRAME) on wlx90de807a7513(90:de:80:7a:75:13) A1=90:de:80:7a:75:13 A2=b0:dc:ef:9f:4c:46
+nl80211: MLME event frame - hexdump(len=191): d0 00 3c 00 90 de 80 7a 75 13 b0 dc ef 9f 4c 46 b0 dc ef 9f 4c 46 a0 7c 06 02 90 de 80 7a 75 13 50 4f 3b cc 9f aa 00 00 30 2a 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 04 0c 00 01 00 15 21 2e d3 3b a2 42 e7 9f 82 a2 a5 11 dc 76 28 36 03 ab cd 01 37 64 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 e2 11 29 6f ed 8f 83 ea 97 34 da cf 81 f5 bb af e3 f5 7c 22 18 cc b4 ef d6 16 2b bc 58 21 21 db d9 b6 19 a5 7e 9e 09 f7 73 90 8d 11 7b 19 65 52 2d 94 d5 11 2f fc d4 fa 92 17 b9 8e d2 b2 ed 51 01 06 50 4f 3b cc 9f aa 03 08 67 69 67 61 62 79 74 65
+nl80211: Frame event
+nl80211: RX frame da=90:de:80:7a:75:13 sa=b0:dc:ef:9f:4c:46 bssid=b0:dc:ef:9f:4c:46 freq=2437 ssi_signal=-28 fc=0xd0 seq_ctrl=0x7ca0 stype=13 (WLAN_FC_STYPE_ACTION) len=191
+wlx90de807a7513: Event RX_MGMT (18) received
+wlx90de807a7513: Received Action frame: SA=b0:dc:ef:9f:4c:46 Category=6 DataLen=166 freq=2437 MHz
+FT: RX Action - hexdump(len=166): 02 90 de 80 7a 75 13 50 4f 3b cc 9f aa 00 00 30 2a 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 04 0c 00 01 00 15 21 2e d3 3b a2 42 e7 9f 82 a2 a5 11 dc 76 28 36 03 ab cd 01 37 64 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 e2 11 29 6f ed 8f 83 ea 97 34 da cf 81 f5 bb af e3 f5 7c 22 18 cc b4 ef d6 16 2b bc 58 21 21 db d9 b6 19 a5 7e 9e 09 f7 73 90 8d 11 7b 19 65 52 2d 94 d5 11 2f fc d4 fa 92 17 b9 8e d2 b2 ed 51 01 06 50 4f 3b cc 9f aa 03 08 67 69 67 61 62 79 74 65
+wlx90de807a7513: FT: Received FT Action Response: STA 90:de:80:7a:75:13 TargetAP 50:4f:3b:cc:9f:aa status 0
+FT: Response IEs - hexdump(len=151): 30 2a 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 04 0c 00 01 00 15 21 2e d3 3b a2 42 e7 9f 82 a2 a5 11 dc 76 28 36 03 ab cd 01 37 64 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 e2 11 29 6f ed 8f 83 ea 97 34 da cf 81 f5 bb af e3 f5 7c 22 18 cc b4 ef d6 16 2b bc 58 21 21 db d9 b6 19 a5 7e 9e 09 f7 73 90 8d 11 7b 19 65 52 2d 94 d5 11 2f fc d4 fa 92 17 b9 8e d2 b2 ed 51 01 06 50 4f 3b cc 9f aa 03 08 67 69 67 61 62 79 74 65
+FT: RIC IEs - hexdump(len=0): [NULL]
+FT: RSNE - hexdump(len=42): 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 04 0c 00 01 00 15 21 2e d3 3b a2 42 e7 9f 82 a2 a5 11 dc 76 28
+FT: MDE - hexdump(len=3): ab cd 01
+FT: FTE - hexdump(len=100): 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 e2 11 29 6f ed 8f 83 ea 97 34 da cf 81 f5 bb af e3 f5 7c 22 18 cc b4 ef d6 16 2b bc 58 21 21 db d9 b6 19 a5 7e 9e 09 f7 73 90 8d 11 7b 19 65 52 2d 94 d5 11 2f fc d4 fa 92 17 b9 8e d2 b2 ed 51 01 06 50 4f 3b cc 9f aa 03 08 67 69 67 61 62 79 74 65
+FT: FTE-MIC Control - hexdump(len=2): 00 00
+FT: FTE-MIC - hexdump(len=16): 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+FT: FTE-ANonce - hexdump(len=32): e2 11 29 6f ed 8f 83 ea 97 34 da cf 81 f5 bb af e3 f5 7c 22 18 cc b4 ef d6 16 2b bc 58 21 21 db
+FT: FTE-SNonce - hexdump(len=32): d9 b6 19 a5 7e 9e 09 f7 73 90 8d 11 7b 19 65 52 2d 94 d5 11 2f fc d4 fa 92 17 b9 8e d2 b2 ed 51
+FT: Parse FTE subelements - hexdump(len=18): 01 06 50 4f 3b cc 9f aa 03 08 67 69 67 61 62 79 74 65
+FT: R1KH-ID - hexdump(len=6): 50 4f 3b cc 9f aa
+FT: SNonce - hexdump(len=32): d9 b6 19 a5 7e 9e 09 f7 73 90 8d 11 7b 19 65 52 2d 94 d5 11 2f fc d4 fa 92 17 b9 8e d2 b2 ed 51
+FT: ANonce - hexdump(len=32): e2 11 29 6f ed 8f 83 ea 97 34 da cf 81 f5 bb af e3 f5 7c 22 18 cc b4 ef d6 16 2b bc 58 21 21 db
+FT: Derive PMK-R1 using KDF-SHA256
+FT: PMK-R0 - hexdump(len=32): [REMOVED]
+FT: R1KH-ID - hexdump(len=6): 50 4f 3b cc 9f aa
+FT: S1KH-ID: 90:de:80:7a:75:13
+FT: PMK-R1 - hexdump(len=32): [REMOVED]
+FT: PMKR1Name - hexdump(len=16): be af 17 f1 d0 35 da db 56 c6 56 5a 60 4f 10 94
+FT: Derive PTK using KDF-SHA256
+FT: PMK-R1 - hexdump(len=32): [REMOVED]
+FT: SNonce - hexdump(len=32): d9 b6 19 a5 7e 9e 09 f7 73 90 8d 11 7b 19 65 52 2d 94 d5 11 2f fc d4 fa 92 17 b9 8e d2 b2 ed 51
+FT: ANonce - hexdump(len=32): e2 11 29 6f ed 8f 83 ea 97 34 da cf 81 f5 bb af e3 f5 7c 22 18 cc b4 ef d6 16 2b bc 58 21 21 db
+FT: BSSID=50:4f:3b:cc:9f:aa STA-ADDR=90:de:80:7a:75:13
+FT: PTK - hexdump(len=48): [REMOVED]
+FT: PMKR1Name - hexdump(len=16): be af 17 f1 d0 35 da db 56 c6 56 5a 60 4f 10 94
+FT: KCK - hexdump(len=16): [REMOVED]
+FT: KEK - hexdump(len=16): [REMOVED]
+FT: TK - hexdump(len=16): [REMOVED]
+FT: PTKName - hexdump(len=16): 96 11 eb 39 54 f9 79 31 9f 44 1c 7f 19 b1 9b c6
+FT: MIC data - hexdump(len=6): 90 de 80 7a 75 13
+FT: MIC data - hexdump(len=6): 50 4f 3b cc 9f aa
+FT: MIC data - hexdump(len=1): 05
+FT: MIC data - hexdump(len=40): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 be af 17 f1 d0 35 da db 56 c6 56 5a 60 4f 10 94
+FT: MIC data - hexdump(len=5): 36 03 ab cd 01
+FT: MIC data - hexdump(len=4): 37 64 00 03
+FT: MIC data - hexdump(len=16): 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+FT: MIC data - hexdump(len=82): e2 11 29 6f ed 8f 83 ea 97 34 da cf 81 f5 bb af e3 f5 7c 22 18 cc b4 ef d6 16 2b bc 58 21 21 db d9 b6 19 a5 7e 9e 09 f7 73 90 8d 11 7b 19 65 52 2d 94 d5 11 2f fc d4 fa 92 17 b9 8e d2 b2 ed 51 01 06 50 4f 3b cc 9f aa 03 08 67 69 67 61 62 79 74 65
+SME: FT IEs - hexdump(len=147): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 be af 17 f1 d0 35 da db 56 c6 56 5a 60 4f 10 94 36 03 ab cd 01 37 64 00 03 e3 63 4e 18 88 78 19 64 2b b6 73 ce 0a e4 0e 95 e2 11 29 6f ed 8f 83 ea 97 34 da cf 81 f5 bb af e3 f5 7c 22 18 cc b4 ef d6 16 2b bc 58 21 21 db d9 b6 19 a5 7e 9e 09 f7 73 90 8d 11 7b 19 65 52 2d 94 d5 11 2f fc d4 fa 92 17 b9 8e d2 b2 ed 51 01 06 50 4f 3b cc 9f aa 03 08 67 69 67 61 62 79 74 65
+nl80211: Authenticate (ifindex=26)
+  * bssid=50:4f:3b:cc:9f:aa
+  * freq=2412
+  * SSID=A_Test_network
+  * IEs - hexdump(len=0): [NULL]
+  * Auth Type 2
+  * Local state change only
+nl80211: Authentication request send successfully
+FT: Installing PTK to the driver.
+wpa_driver_nl80211_set_key: ifindex=26 (wlx90de807a7513) alg=3 addr=0x5beb8e5e07bc key_idx=0 set_tx=1 seq_len=6 key_len=16 key_flag=0x2c
+nl80211: NEW_KEY
+nl80211: KEY_DATA - hexdump(len=16): [REMOVED]
+nl80211: KEY_SEQ - hexdump(len=6): 00 00 00 00 00 00
+   addr=50:4f:3b:cc:9f:aa
+   pairwise key
+
+

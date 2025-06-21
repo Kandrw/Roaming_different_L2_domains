@@ -1,0 +1,712 @@
+
+
+
+
+make -j16
+
+
+
+
+
+make package/network/services/hostapd
+
+#принудительно
+#make package/network/services/hostapd -B
+
+config - /home/andrey/openwrt/build_dir/target-aarch64_cortex-a53_musl/hostapd-wpad-basic-mbedtls/hostapd-2024.09.15~5ace39b0/hostapd/.config
+make package/hostapd/compile
+
+Перенос изменений в hostapd openwrt через patch
+git format-patch -1 4f36303674fb0e063e48ea991134d8c87dc4a4cb
+realpath 0001-test-and-logging.patch
+/home/andrey/Diplom/hostap/hostapd/0001-test-and-logging.patch
+cp /home/andrey/Diplom/hostap/hostapd/0001-test-and-logging.patch ./
+git am 0001-Commit-message.patch
+#git am --show-current-patch=diff
+git apply --verbose --reject --whitespace=fix patch
+
+
+aarch64-openwrt-linux-musl-gcc
+
+/home/andrey/openwrt/staging_dir/toolchain-aarch64_cortex-a53_gcc-13.3.0_musl/bin/aarch64-openwrt-linux-musl-gcc
+
+
+
+iw list | grep phy
+iw phy phy1 interface add testap0 type __ap
+
+
+
+/usr/sbin/hostapd -dd  -t -f /tmp/hostapd.log -P  /tmp/pid.pid -B /tmp/hostapd.conf
+
+
+iw phy phy0 interface add wlan02g type __ap
+
+
+
+
+    Перенос на ax3000t
+scp /home/andrey/Diplom/hostapd-2024.09.15~5ace39b0/wpad root@192.168.1.1:/tmp/hostapd
+
+    Запуск на ax3000t
+scp /home/andrey/Diplom/config/hostapd/hostapd_ax3000t.conf root@192.168.1.10:/tmp/hostapd_ax3000t.conf
+
+/usr/sbin/hostapd -dd  -t -f /tmp/hostapd.log -P  /tmp/pid.pid -B /tmp/hostapd_ax3000t.conf
+
+
+    статус подключения на ax3000t
+iw dev wlan02g station dump
+
+
+
+
+    Подготовка
+
+#ip link add name br0 type bridge
+#brctl addif br0 wlp0s20f3 - нет поддержки
+#brctl addif br0 enps0
+
+systemctl stop NetworkManager
+systemctl stop wpa_supplicant
+ifconfig wlp0s20f3 down
+
+    Переместить в сетевое пространство имен
+
+
+ip netns add ap_wlp0s20f3
+ip link add name br0 type bridge
+
+ip link add veth0_ns1 type veth peer name veth1_ns1
+ip link set veth1_ns1 netns ap_wlp0s20f3
+ip netns exec ap_wlp0s20f3 ip link set veth1_ns1 up
+ip link set veth0_ns1 up
+brctl addif br0 enp3s0
+brctl addif br0 veth0_ns1
+ifconfig br0 up
+dhclient br0
+
+echo PHY0=phy$(iw dev | grep -B 1 wlp0s20f3 | grep -oP 'phy#\K\d+')
+
+iw phy phy0 set netns name ap_wlp0s20f3
+ip netns exec ap_wlp0s20f3 bash
+
+iw dev wlp0s20f3 set type ap
+ifconfig wlp0s20f3 up
+iwconfig wlp0s20f3
+ip addr add 192.168.1.20/24 dev wlp0s20f3
+
+    запуск из /home/andrey/Документы/Diploma/Roaming_different_L2_domains/dhcp
+./dhcp/server/dhcpd -cf ./config/dhcp/dhcpd.conf -pf /var/run/dhcpd.pid wlp0s20f3 &
+
+
+    Запуск на wlp0s20f3 из /home/andrey/Diplom
+
+./hostap/hostapd/hostapd -dd  -t -f /home/andrey/hostapd_wlp0s20f3.log -P  /run/hostapd.wlp0s20f3.pid -B config/hostapd/hostapd_wlp0s20f3.conf
+
+    В исходное состояние
+ip addr del 192.168.1.20/24 dev wlp0s20f3
+ifconfig wlp0s20f3 down
+iwconfig wlp0s20f3 mode managed
+ifconfig wlp0s20f3 up
+iwconfig wlp0s20f3
+
+
+    Настройка клиента
+
+echo PHY1=phy$(iw dev | grep -B 1 wlx90de807a7513 | grep -oP 'phy#\K\d+')
+ip netns add client_ns
+iw phy phy set netns name client_ns
+#ip link set wlx90de807a7513 netns client_ns
+ip netns exec client_ns bash
+
+iwconfig wlx90de807a7513
+ifconfig wlx90de807a7513 up
+
+wpa_supplicant -dd -B -i wlx90de807a7513 -c /home/andrey/Diplom/config/wpa_supplicant/wpa.conf
+wpa_cli -i wlx90de807a7513 scan_results
+wpa_cli -i wlx90de807a7513 status
+
+    роумиг over ds
+ft_ds mac
+    роумиг over air
+roam mac
+
+    Проверить что клиент подключен
+./hostap/hostapd/hostapd_cli
+
+    Добавить маршрут
+sudo ip route add 192.168.1.10 dev enp3s0
+
+
+
+
+Настроить сеть (enx2e1418d4b7d5 - может поменяться)
+ifconfig enx2e1418d4b7d5 up
+dhclient enx2e1418d4b7d5
+sudo ip route del default via 192.168.1.1 dev enp3s0
+sudo ip route add default via 192.168.206.1 dev enx2e1418d4b7d5
+
+sudo ip route del default via 0.0.0.0 dev enp3s0
+sudo ip route add default via 0.0.0.0 dev enx2e1418d4b7d5
+
+dhclient -r enx7a00039fc3d0
+dhclient enx2e1418d4b7d5
+
+
+
+
+
+eth.type == 0x890d
+
+
+
+Результаты
+
+wpa_cli -i wlx90de807a7513 status
+bssid=b0:dc:ef:9f:4c:46
+freq=2437
+ssid=A_Test_network
+id=0
+mode=station
+pairwise_cipher=CCMP
+group_cipher=CCMP
+key_mgmt=WPA2-PSK
+wpa_state=COMPLETED
+address=90:de:80:7a:75:13
+uuid=4400c9be-ac4a-5ca1-8660-6e719e6b1b26
+
+
+./hostap/hostapd/hostapd_cli
+hostapd_cli v2.12-devel-hostap_2_11-857-g54930b62b
+Copyright (c) 2004-2024, Jouni Malinen <j@w1.fi> and contributors
+
+This software may be distributed under the terms of the BSD license.
+See README for more details.
+
+
+Selected interface 'wlp0s20f3'
+
+Interactive mode
+
+> all_sta
+90:de:80:7a:75:13
+flags=[AUTH][ASSOC][AUTHORIZED][SHORT_PREAMBLE]
+aid=1
+capability=0x431
+listen_interval=5
+supported_rates=02 04 0b 16 0c 12 18 24 30 48 60 6c
+timeout_next=NULLFUNC POLL
+dot11RSNAStatsSTAAddress=90:de:80:7a:75:13
+dot11RSNAStatsVersion=1
+dot11RSNAStatsSelectedPairwiseCipher=00-0f-ac-4
+dot11RSNAStatsTKIPLocalMICFailures=0
+dot11RSNAStatsTKIPRemoteMICFailures=0
+wpa=2
+AKMSuiteSelector=00-0f-ac-2
+hostapdWPAPTKState=11
+hostapdWPAPTKGroupState=0
+hostapdMFPR=0
+rx_packets=70
+tx_packets=4
+rx_bytes=4871
+tx_bytes=404
+inactive_msec=1218
+signal=-32
+rx_rate_info=540
+tx_rate_info=180
+connected_time=33
+supp_op_classes=51515354737475767778797a7b7c7d7e7f808182
+ext_capab=00000a0201404040000120
+
+
+sudo ip route add 0.0.0.0 dev enx0e126dd472e8
+sudo ip route del 192.168.1.0/24 dev wlp0s20f3
+sudo ip route add 192.168.1.0/24 dev enp3s0 metric 10
+sudo ip route add 192.168.1.10 dev enp3s0
+sudo ip route del 192.168.1.0/24 dev enp3s0
+0.0.0.0         192.168.1.1     0.0.0.0         UG    0      0        0 enp3s0
+
+
+
+    over-the-air
+wlx90de807a7513: WPA: using PTK CCMP
+wlx90de807a7513: WPA: AP key_mgmt 0x42 network profile key_mgmt 0x40; available key_mgmt 0x40
+wlx90de807a7513: WPA: using KEY_MGMT FT/PSK
+wlx90de807a7513: WPA: AP mgmt_group_cipher 0x20 network profile mgmt_group_cipher 0x0; available mgmt_group_cipher 0x0
+wlx90de807a7513: WPA: not using MGMT group cipher
+WPA: Set own WPA IE default - hexdump(len=22): 30 14 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00
+RSN: Set own RSNXE default - hexdump(len=0):
+PSK (set in config) - hexdump(len=32): [REMOVED]
+WPA: Set PMK based on external data - hexdump(len=32): [REMOVED]
+FT: MDE - hexdump(len=3): ab cd 01
+FT: Mobility domain - hexdump(len=2): ab cd
+FT: Capability and Policy: 0x01
+FT: Stored MDIE and FTIE from (Re)Association Response - hexdump(len=5): 36 03 ab cd 01
+Get randomness: len=32 entropy=207
+SME: FT IEs - hexdump(len=139): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 15 21 2e d3 3b a2 42 e7 9f 82 a2 a5 11 dc 76 28 36 03 ab cd 01 37 5c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 71 43 9e fe be 99 cf e0 b9 cd ea ab cc 99 30 93 dc f1 83 70 f0 22 f3 4f 7c 43 5b fe a6 fd 3d 69 03 08 67 69 67 61 62 79 74 65
+wlx90de807a7513: SME: FT mobility domain abcd
+wlx90de807a7513: SME: Trying to use FT over-the-air
+RRM: Determining whether RRM can be used - device support: 0x30
+RRM: Adding RRM IE to Association Request
+Added supported operating classes IE - hexdump(len=22): 3b 14 51 51 53 54 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f 80 81 82
+EAPOL: External notification - EAP success=0
+EAPOL: External notification - EAP fail=0
+EAPOL: External notification - portControl=Auto
+wlx90de807a7513: Cancelling scan request
+wlx90de807a7513: SME: Trying to authenticate with b0:dc:ef:9f:4c:46 (SSID='A_Test_network' freq=2437 MHz)
+CTRL-DEBUG: ctrl_sock-sendmsg: sock=12 sndbuf=212992 outq=0 send_len=88
+CTRL_IFACE monitor sent successfully to /tmp/wpa_ctrl_894644-43\x00
+EAPOL: External notification - portValid=0
+EAPOL: SUPP_PAE entering state DISCONNECTED
+EAPOL: Supplicant port status: Unauthorized
+nl80211: Set supplicant port unauthorized for 50:4f:3b:cc:9f:aa
+EAPOL: SUPP_BE entering state INITIALIZE
+EAPOL: SUPP_PAE entering state CONNECTING
+EAPOL: enable timer tick
+
+
+
+wlx90de807a7513: WPA: clearing AP RSNXE
+wlx90de807a7513: WPA: AP group 0x10 network profile group 0x18; available group 0x10
+wlx90de807a7513: WPA: using GTK CCMP
+wlx90de807a7513: WPA: AP pairwise 0x10 network profile pairwise 0x10; available pairwise 0x10
+wlx90de807a7513: WPA: using PTK CCMP
+wlx90de807a7513: WPA: AP key_mgmt 0x42 network profile key_mgmt 0x40; available key_mgmt 0x40
+wlx90de807a7513: WPA: using KEY_MGMT FT/PSK
+wlx90de807a7513: WPA: AP mgmt_group_cipher 0x20 network profile mgmt_group_cipher 0x0; available mgmt_group_cipher 0x0
+wlx90de807a7513: WPA: not using MGMT group cipher
+WPA: Set own WPA IE default - hexdump(len=22): 30 14 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00
+RSN: Set own RSNXE default - hexdump(len=0):
+PSK (set in config) - hexdump(len=32): [REMOVED]
+WPA: Set PMK based on external data - hexdump(len=32): [REMOVED]
+FT: MDE - hexdump(len=3): ab cd 01
+FT: Mobility domain - hexdump(len=2): ab cd
+FT: Capability and Policy: 0x01
+FT: Stored MDIE and FTIE from (Re)Association Response - hexdump(len=5): 36 03 ab cd 01
+Get randomness: len=32 entropy=0
+SME: FT IEs - hexdump(len=138): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 9f 3f f6 92 49 28 91 03 28 23 85 73 64 18 45 24 36 03 ab cd 01 37 5b 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 fd 02 35 0a ec b1 ad 05 8d a1 9b 0d 43 96 42 1a d7 f0 d8 32 4a 6d 36 c6 ea d4 97 25 12 89 0d 9d 03 07 61 78 33 30 30 30 74
+wlx90de807a7513: SME: FT mobility domain abcd
+wlx90de807a7513: SME: Trying to use FT over-the-air
+RRM: Determining whether RRM can be used - device support: 0x30
+RRM: Adding RRM IE to Association Request
+Added supported operating classes IE - hexdump(len=22): 3b 14 51 51 53 54 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f 80 81 82
+EAPOL: External notification - EAP success=0
+EAPOL: External notification - EAP fail=0
+EAPOL: External notification - portControl=Auto
+wlx90de807a7513: Cancelling scan request
+wlx90de807a7513: SME: Trying to authenticate with 50:4f:3b:cc:9f:aa (SSID='A_Test_network' freq=2412 MHz)
+CTRL-DEBUG: ctrl_sock-sendmsg: sock=12 sndbuf=212992 outq=0 send_len=88
+CTRL_IFACE monitor sent successfully to /tmp/wpa_ctrl_894644-43\x00
+EAPOL: External notification - portValid=0
+EAPOL: SUPP_PAE entering state DISCONNECTED
+EAPOL: Supplicant port status: Unauthorized
+nl80211: Set supplicant port unauthorized for b0:dc:ef:9f:4c:46
+EAPOL: SUPP_BE entering state INITIALIZE
+EAPOL: SUPP_PAE entering state CONNECTING
+EAPOL: enable timer tick
+EAPOL: SUPP_BE entering state IDLE
+wpa_driver_nl80211_set_key: ifindex=15 (wlx90de807a7513) alg=0 addr=(nil) key_idx=0 set_tx=0 seq_len=0 key_len=0 key_flag=0x10
+nl80211: DEL_KEY
+   broadcast key
+wpa_driver_nl80211_set_key: ifindex=15 (wlx90de807a7513) alg=0 addr=(nil) key_idx=1 set_tx=0 seq_len=0 key_len=0 key_flag=0x10
+nl80211: DEL_KEY
+   broadcast key
+wpa_driver_nl80211_set_key: ifindex=15 (wlx90de807a7513) alg=0 addr=0x5b0d78c5cae0 key_idx=0 set_tx=0 seq_len=0 key_len=0 key_flag=0x20
+nl80211: DEL_KEY
+   addr=50:4f:3b:cc:9f:aa
+   pairwise key
+wlx90de807a7513: State: COMPLETED -> AUTHENTICATING
+Not configuring frame filtering - BSS 00:00:00:00:00:00 is not a Hotspot 2.0 network
+wlx90de807a7513: Determining shared radio frequencies (max len 1)
+wlx90de807a7513: Shared frequencies (len=1): completed iteration
+wlx90de807a7513: freq[0]: 2437, flags=0x1
+Conflicting frequency found (2437 != 2412)
+nl80211: Authenticate (ifindex=15)
+  * bssid=50:4f:3b:cc:9f:aa
+  * freq=2412
+  * SSID=A_Test_network
+  * IEs - hexdump(len=138): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 9f 3f f6 92 49 28 91 03 28 23 85 73 64 18 45 24 36 03 ab cd 01 37 5b 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 fd 02 35 0a ec b1 ad 05 8d a1 9b 0d 43 96 42 1a d7 f0 d8 32 4a 6d 36 c6 ea d4 97 25 12 89 0d 9d 03 07 61 78 33 30 30 30 74
+  * Auth Type 2
+wlx90de807a7513: nl80211: MLME command failed (auth): count=0 ret=-2 (No such file or directory)
+nl80211: Trigger single channel scan to refresh cfg80211 BSS entry
+wlx90de807a7513: nl80211: scan request
+nl80211: Scan SSID A_Test_network
+nl80211: Scan frequency 2412 MHz
+Scan requested (ret=0) - scan timeout 30 seconds
+nl80211: Event message available
+nl80211: Drv Event 33 (NL80211_CMD_TRIGGER_SCAN) received for wlx90de807a7513
+wlx90de807a7513: nl80211: Scan trigger
+nl80211: Do not indicate scan-start event due to internal scan_for_auth
+RTM_NEWLINK: ifi_index=15 ifname=wlx90de807a7513 wext ifi_family=0 ifi_flags=0x11043 ([UP][RUNNING][LOWER_UP])
+nl80211: Event message available
+nl80211: Drv Event 34 (NL80211_CMD_NEW_SCAN_RESULTS) received for wlx90de807a7513
+wlx90de807a7513: nl80211: New scan results available
+nl80211: Scan results for missing cfg80211 BSS entry
+nl80211: Try to authenticate again
+nl80211: Authenticate (ifindex=15)
+  * bssid=50:4f:3b:cc:9f:aa
+  * freq=2412
+  * SSID=A_Test_network
+  * IEs - hexdump(len=138): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 9f 3f f6 92 49 28 91 03 28 23 85 73 64 18 45 24 36 03 ab cd 01 37 5b 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 fd 02 35 0a ec b1 ad 05 8d a1 9b 0d 43 96 42 1a d7 f0 d8 32 4a 6d 36 c6 ea d4 97 25 12 89 0d 9d 03 07 61 78 33 30 30 30 74
+  * Auth Type 2
+nl80211: Authentication request send successfully
+RTM_NEWLINK: ifi_index=15 ifname=wlx90de807a7513 operstate=2 linkmode=1 ifi_family=0 ifi_flags=0x1003 ([UP])
+RTM_NEWLINK: ifi_index=15 ifname=wlx90de807a7513 wext ifi_family=0 ifi_flags=0x1003 ([UP])
+nl80211: Event message available
+nl80211: Drv Event 20 (NL80211_CMD_DEL_STATION) received for wlx90de807a7513
+nl80211: Delete station b0:dc:ef:9f:4c:46
+nl80211: Event message available
+nl80211: Drv Event 39 (NL80211_CMD_DEAUTHENTICATE) received for wlx90de807a7513
+nl80211: MLME event 39 (NL80211_CMD_DEAUTHENTICATE) on wlx90de807a7513(90:de:80:7a:75:13) A1=b0:dc:ef:9f:4c:46 A2=90:de:80:7a:75:13
+nl80211: MLME event frame - hexdump(len=26): c0 00 00 00 b0 dc ef 9f 4c 46 90 de 80 7a 75 13 b0 dc ef 9f 4c 46 00 00 01 00
+nl80211: Deauthenticate event
+nl80211: Received a locally generated deauth event. Clear ignore_next_local_deauth flag
+nl80211: Event message available
+nl80211: Drv Event 48 (NL80211_CMD_DISCONNECT) received for wlx90de807a7513
+nl80211: Ignore disconnect event when using userspace SME
+nl80211: Event message available
+nl80211: Drv Event 19 (NL80211_CMD_NEW_STATION) received for wlx90de807a7513
+nl80211: New station 50:4f:3b:cc:9f:aa
+nl80211: Event message available
+nl80211: Drv Event 37 (NL80211_CMD_AUTHENTICATE) received for wlx90de807a7513
+nl80211: MLME event 37 (NL80211_CMD_AUTHENTICATE) on wlx90de807a7513(90:de:80:7a:75:13) A1=90:de:80:7a:75:13 A2=50:4f:3b:cc:9f:aa
+nl80211: MLME event frame - hexdump(len=180): b0 00 24 00 90 de 80 7a 75 13 50 4f 3b cc 9f aa 50 4f 3b cc 9f aa 00 00 02 00 02 00 00 00 30 2a 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 04 0c 00 01 00 9f 3f f6 92 49 28 91 03 28 23 85 73 64 18 45 24 36 03 ab cd 01 37 63 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 e3 b2 cc f2 d0 ac 4b 5e 73 62 08 b1 f2 de 4b 2b 5f bf 2a 1d 86 b9 dd 58 9d 64 a8 97 fd 64 08 5b fd 02 35 0a ec b1 ad 05 8d a1 9b 0d 43 96 42 1a d7 f0 d8 32 4a 6d 36 c6 ea d4 97 25 12 89 0d 9d 01 06 50 4f 3b cc 9f aa 03 07 61 78 33 30 30 30 74
+nl80211: Authenticate event
+wlx90de807a7513: Event AUTH (10) received
+wlx90de807a7513: SME: Authentication response: peer=50:4f:3b:cc:9f:aa auth_type=2 auth_transaction=2 status_code=0
+SME: Authentication response IEs - hexdump(len=150): 30 2a 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 04 0c 00 01 00 9f 3f f6 92 49 28 91 03 28 23 85 73 64 18 45 24 36 03 ab cd 01 37 63 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 e3 b2 cc f2 d0 ac 4b 5e 73 62 08 b1 f2 de 4b 2b 5f bf 2a 1d 86 b9 dd 58 9d 64 a8 97 fd 64 08 5b fd 02 35 0a ec b1 ad 05 8d a1 9b 0d 43 96 42 1a d7 f0 d8 32 4a 6d 36 c6 ea d4 97 25 12 89 0d 9d 01 06 50 4f 3b cc 9f aa 03 07 61 78 33 30 30 30 74
+FT: Response IEs - hexdump(len=150): 30 2a 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 04 0c 00 01 00 9f 3f f6 92 49 28 91 03 28 23 85 73 64 18 45 24 36 03 ab cd 01 37 63 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 e3 b2 cc f2 d0 ac 4b 5e 73 62 08 b1 f2 de 4b 2b 5f bf 2a 1d 86 b9 dd 58 9d 64 a8 97 fd 64 08 5b fd 02 35 0a ec b1 ad 05 8d a1 9b 0d 43 96 42 1a d7 f0 d8 32 4a 6d 36 c6 ea d4 97 25 12 89 0d 9d 01 06 50 4f 3b cc 9f aa 03 07 61 78 33 30 30 30 74
+FT: RIC IEs - hexdump(len=0): [NULL]
+FT: RSNE - hexdump(len=42): 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 04 0c 00 01 00 9f 3f f6 92 49 28 91 03 28 23 85 73 64 18 45 24
+FT: MDE - hexdump(len=3): ab cd 01
+FT: FTE - hexdump(len=99): 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 e3 b2 cc f2 d0 ac 4b 5e 73 62 08 b1 f2 de 4b 2b 5f bf 2a 1d 86 b9 dd 58 9d 64 a8 97 fd 64 08 5b fd 02 35 0a ec b1 ad 05 8d a1 9b 0d 43 96 42 1a d7 f0 d8 32 4a 6d 36 c6 ea d4 97 25 12 89 0d 9d 01 06 50 4f 3b cc 9f aa 03 07 61 78 33 30 30 30 74
+FT: FTE-MIC Control - hexdump(len=2): 00 00
+FT: FTE-MIC - hexdump(len=16): 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+FT: FTE-ANonce - hexdump(len=32): e3 b2 cc f2 d0 ac 4b 5e 73 62 08 b1 f2 de 4b 2b 5f bf 2a 1d 86 b9 dd 58 9d 64 a8 97 fd 64 08 5b
+FT: FTE-SNonce - hexdump(len=32): fd 02 35 0a ec b1 ad 05 8d a1 9b 0d 43 96 42 1a d7 f0 d8 32 4a 6d 36 c6 ea d4 97 25 12 89 0d 9d
+FT: Parse FTE subelements - hexdump(len=17): 01 06 50 4f 3b cc 9f aa 03 07 61 78 33 30 30 30 74
+FT: R1KH-ID - hexdump(len=6): 50 4f 3b cc 9f aa
+FT: SNonce - hexdump(len=32): fd 02 35 0a ec b1 ad 05 8d a1 9b 0d 43 96 42 1a d7 f0 d8 32 4a 6d 36 c6 ea d4 97 25 12 89 0d 9d
+FT: ANonce - hexdump(len=32): e3 b2 cc f2 d0 ac 4b 5e 73 62 08 b1 f2 de 4b 2b 5f bf 2a 1d 86 b9 dd 58 9d 64 a8 97 fd 64 08 5b
+FT: Derive PMK-R1 using KDF-SHA256
+FT: PMK-R0 - hexdump(len=32): [REMOVED]
+FT: R1KH-ID - hexdump(len=6): 50 4f 3b cc 9f aa
+FT: S1KH-ID: 90:de:80:7a:75:13
+FT: PMK-R1 - hexdump(len=32): [REMOVED]
+FT: PMKR1Name - hexdump(len=16): 5a 8a 75 44 90 5c ea 69 af 7d a6 01 0f fd 15 bd
+FT: Derive PTK using KDF-SHA256
+FT: PMK-R1 - hexdump(len=32): [REMOVED]
+FT: SNonce - hexdump(len=32): fd 02 35 0a ec b1 ad 05 8d a1 9b 0d 43 96 42 1a d7 f0 d8 32 4a 6d 36 c6 ea d4 97 25 12 89 0d 9d
+FT: ANonce - hexdump(len=32): e3 b2 cc f2 d0 ac 4b 5e 73 62 08 b1 f2 de 4b 2b 5f bf 2a 1d 86 b9 dd 58 9d 64 a8 97 fd 64 08 5b
+FT: BSSID=50:4f:3b:cc:9f:aa STA-ADDR=90:de:80:7a:75:13
+FT: PTK - hexdump(len=48): [REMOVED]
+FT: PMKR1Name - hexdump(len=16): 5a 8a 75 44 90 5c ea 69 af 7d a6 01 0f fd 15 bd
+FT: KCK - hexdump(len=16): [REMOVED]
+FT: KEK - hexdump(len=16): [REMOVED]
+FT: TK - hexdump(len=16): [REMOVED]
+FT: PTKName - hexdump(len=16): ba f7 72 cd 96 c3 e2 9a 55 91 4e 71 c4 75 38 c5
+FT: MIC data - hexdump(len=6): 90 de 80 7a 75 13
+FT: MIC data - hexdump(len=6): 50 4f 3b cc 9f aa
+FT: MIC data - hexdump(len=1): 05
+FT: MIC data - hexdump(len=40): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 5a 8a 75 44 90 5c ea 69 af 7d a6 01 0f fd 15 bd
+FT: MIC data - hexdump(len=5): 36 03 ab cd 01
+FT: MIC data - hexdump(len=4): 37 63 00 03
+FT: MIC data - hexdump(len=16): 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+FT: MIC data - hexdump(len=81): e3 b2 cc f2 d0 ac 4b 5e 73 62 08 b1 f2 de 4b 2b 5f bf 2a 1d 86 b9 dd 58 9d 64 a8 97 fd 64 08 5b fd 02 35 0a ec b1 ad 05 8d a1 9b 0d 43 96 42 1a d7 f0 d8 32 4a 6d 36 c6 ea d4 97 25 12 89 0d 9d 01 06 50 4f 3b cc 9f aa 03 07 61 78 33 30 30 30 74
+SME: FT IEs - hexdump(len=146): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 5a 8a 75 44 90 5c ea 69 af 7d a6 01 0f fd 15 bd 36 03 ab cd 01 37 63 00 03 2d 80 b7 60 94 8a 60 a4 dd fd b8 80 be ae 12 ed e3 b2 cc f2 d0 ac 4b 5e 73 62 08 b1 f2 de 4b 2b 5f bf 2a 1d 86 b9 dd 58 9d 64 a8 97 fd 64 08 5b fd 02 35 0a ec b1 ad 05 8d a1 9b 0d 43 96 42 1a d7 f0 d8 32 4a 6d 36 c6 ea d4 97 25 12 89 0d 9d 01 06 50 4f 3b cc 9f aa 03 07 61 78 33 30 30 30 74
+nl80211: Authenticate (ifindex=15)
+  * bssid=50:4f:3b:cc:9f:aa
+  * freq=2412
+  * SSID=A_Test_network
+  * IEs - hexdump(len=0): [NULL]
+  * Auth Type 2
+  * Local state change only
+nl80211: Authentication request send successfully
+FT: Installing PTK to the driver.
+wpa_driver_nl80211_set_key: ifindex=15 (wlx90de807a7513) alg=3 addr=0x7ffcfbadabe0 key_idx=0 set_tx=1 seq_len=6 key_len=16 key_flag=0x2c
+nl80211: NEW_KEY
+nl80211: KEY_DATA - hexdump(len=16): [REMOVED]
+nl80211: KEY_SEQ - hexdump(len=6): 00 00 00 00 00 00
+   addr=50:4f:3b:cc:9f:aa
+   pairwise key
+nl80211: kernel reports: key not allowed
+nl80211: set_key failed; err=-67 Link has been severed
+FT: Failed to set PTK to the driver
+FT: Failed to set PTK prior to association - try again after reassociation
+SME: Association Request IEs - hexdump(len=69): 30 14 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 7f 0b 00 00 0a 02 01 40 40 40 00 01 20 36 03 ab cd 01 46 05 70 00 00 00 00 3b 14 51 51 53 54 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f 80 81 82
+SME: Association Request IEs after FT IE removal - hexdump(len=35): 7f 0b 00 00 0a 02 01 40 40 40 00 01 20 3b 14 51 51 53 54 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f 80 81 82
+SME: Association Request IEs after FT override - hexdump(len=188): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 5a 8a 75 44 90 5c ea 69 af 7d a6 01 0f fd 15 bd 46 05 70 00 00 00 00 36 03 ab cd 01 37 63 00 03 2d 80 b7 60 94 8a 60 a4 dd fd b8 80 be ae 12 ed e3 b2 cc f2 d0 ac 4b 5e 73 62 08 b1 f2 de 4b 2b 5f bf 2a 1d 86 b9 dd 58 9d 64 a8 97 fd 64 08 5b fd 02 35 0a ec b1 ad 05 8d a1 9b 0d 43 96 42 1a d7 f0 d8 32 4a 6d 36 c6 ea d4 97 25 12 89 0d 9d 01 06 50 4f 3b cc 9f aa 03 07 61 78 33 30 30 30 74 7f 0b 00 00 0a 02 01 40 40 40 00 01 20 3b 14 51 51 53 54 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f 80 81 82
+wlx90de807a7513: Trying to associate with 50:4f:3b:cc:9f:aa (SSID='A_Test_network' freq=2412 MHz)
+CTRL-DEBUG: ctrl_sock-sendmsg: sock=12 sndbuf=212992 outq=0 send_len=80
+CTRL_IFACE monitor sent successfully to /tmp/wpa_ctrl_894644-43\x00
+wlx90de807a7513: State: AUTHENTICATING -> ASSOCIATING
+nl80211: Set wlx90de807a7513 operstate 1->0 (DORMANT)
+netlink: Operstate: ifindex=15 linkmode=-1 (no change), operstate=5 (IF_OPER_DORMANT)
+WPA: set own WPA/RSN IE - hexdump(len=40): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 5a 8a 75 44 90 5c ea 69 af 7d a6 01 0f fd 15 bd
+wlx90de807a7513: RSN: clearing own RSNXE
+nl80211: Associate (ifindex=15)
+  * bssid=50:4f:3b:cc:9f:aa
+  * freq=2412
+  * SSID=A_Test_network
+  * IEs - hexdump(len=188): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 5a 8a 75 44 90 5c ea 69 af 7d a6 01 0f fd 15 bd 46 05 70 00 00 00 00 36 03 ab cd 01 37 63 00 03 2d 80 b7 60 94 8a 60 a4 dd fd b8 80 be ae 12 ed e3 b2 cc f2 d0 ac 4b 5e 73 62 08 b1 f2 de 4b 2b 5f bf 2a 1d 86 b9 dd 58 9d 64 a8 97 fd 64 08 5b fd 02 35 0a ec b1 ad 05 8d a1 9b 0d 43 96 42 1a d7 f0 d8 32 4a 6d 36 c6 ea d4 97 25 12 89 0d 9d 01 06 50 4f 3b cc 9f aa 03 07 61 78 33 30 30 30 74 7f 0b 00 00 0a 02 01 40 40 40 00 01 20 3b 14 51 51 53 54 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f 80 81 82
+  * WPA Versions 0x2
+  * pairwise=0xfac04
+  * group=0xfac04
+  * akm=0xfac04
+  * htcaps - hexdump(len=26): 63 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  * htcaps_mask - hexdump(len=26): 63 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  * vhtcaps - hexdump(len=12): 00 00 00 00 00 00 00 00 00 00 00 00
+  * vhtcaps_mask - hexdump(len=12): 00 00 00 00 00 00 00 00 00 00 00 00
+  * prev_bssid=b0:dc:ef:9f:4c:46
+nl80211: Association request send successfully
+nl80211: Event message available
+nl80211: Drv Event 20 (NL80211_CMD_DEL_STATION) received for wlx90de807a7513
+nl80211: Delete station 50:4f:3b:cc:9f:aa
+nl80211: Event message available
+nl80211: Drv Event 38 (NL80211_CMD_ASSOCIATE) received for wlx90de807a7513
+nl80211: MLME event 38 (NL80211_CMD_ASSOCIATE) on wlx90de807a7513(90:de:80:7a:75:13) A1=90:de:80:7a:75:13 A2=50:4f:3b:cc:9f:aa
+nl80211: MLME event frame - hexdump(len=214): 30 00 24 00 90 de 80 7a 75 13 50 4f 3b cc 9f aa 50 4f 3b cc 9f aa 20 00 31 14 37 00 01 c0 01 08 8c 12 98 24 b0 48 60 6c 46 05 02 00 00 00 00 2d 1a ed 09 13 ff ff 00 00 00 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 3d 16 01 00 15 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ff 1a 23 05 00 08 1a 44 10 02 20 ce 92 6f 09 af c8 00 0c 00 fa ff fa ff 19 1c c7 71 ff 07 24 f4 3f 00 3d fc ff ff 02 27 03 ff 0e 26 00 08 a9 ff 2f a9 ff 45 75 ff 65 75 ff 7f 0a 04 00 00 00 01 00 01 40 00 40 6e 12 00 00 02 10 01 01 ff ff 12 16 18 26 28 28 2c 2e 30 38 dd 18 00 50 f2 02 01 01 81 00 03 a4 00 00 27 a4 00 00 42 43 5e 00 62 32 2f 00
+
+
+роуминг over-the-DS удался похоже
+CTRL-DEBUG: ctrl_sock-sendto: sock=12 sndbuf=212992 outq=0 send_len=258
+wlx90de807a7513: Control interface command 'FT_DS b0:dc:ef:9f:4c:46'
+CTRL_IFACE FT_DS b0:dc:ef:9f:4c:46
+FT: Request over-the-DS with b0:dc:ef:9f:4c:46
+Get randomness: len=32 entropy=0
+nl80211: Send Action frame (ifindex=26, freq=2412 MHz wait=0 ms no_cck=0 offchanok=1)
+nl80211: CMD_FRAME freq=2412 wait=0 no_cck=0 no_ack=0 offchanok=1
+CMD_FRAME - hexdump(len=177): d0 00 00 00 50 4f 3b cc 9f aa 90 de 80 7a 75 13 50 4f 3b cc 9f aa 00 00 06 01 90 de 80 7a 75 13 b0 dc ef 9f 4c 46 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 15 21 2e d3 3b a2 42 e7 9f 82 a2 a5 11 dc 76 28 36 03 ab cd 01 37 5c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 56 b9 8d ec f9 11 38 d7 15 89 31 bc 24 a0 af b9 0f 09 2e 13 72 d0 a7 8f 90 0d aa 07 a2 5b 87 3f 03 08 67 69 67 61 62 79 74 65
+nl80211: Frame TX command accepted; cookie 0x10
+CTRL-DEBUG: ctrl_sock-sendto: sock=12 sndbuf=212992 outq=0 send_len=3
+nl80211: Event message available
+nl80211: Drv Event 60 (NL80211_CMD_FRAME_TX_STATUS) received for wlx90de807a7513
+nl80211: MLME event 60 (NL80211_CMD_FRAME_TX_STATUS) on wlx90de807a7513(90:de:80:7a:75:13) A1=50:4f:3b:cc:9f:aa A2=90:de:80:7a:75:13
+nl80211: MLME event frame - hexdump(len=177): d0 00 00 00 50 4f 3b cc 9f aa 90 de 80 7a 75 13 50 4f 3b cc 9f aa 00 00 06 01 90 de 80 7a 75 13 b0 dc ef 9f 4c 46 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 15 21 2e d3 3b a2 42 e7 9f 82 a2 a5 11 dc 76 28 36 03 ab cd 01 37 5c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 56 b9 8d ec f9 11 38 d7 15 89 31 bc 24 a0 af b9 0f 09 2e 13 72 d0 a7 8f 90 0d aa 07 a2 5b 87 3f 03 08 67 69 67 61 62 79 74 65
+nl80211: Frame TX status event A1=50:4f:3b:cc:9f:aa stype=13 cookie=0x10 ack=1
+nl80211: Frame TX status: cookie=0x10 (match) (ack=1)
+wlx90de807a7513: Event TX_STATUS (16) received
+wlx90de807a7513: EVENT_TX_STATUS dst=50:4f:3b:cc:9f:aa type=0 stype=13
+Off-channel: Ignore Action TX status - no pending operation
+nl80211: Event message available
+nl80211: BSS Event 59 (NL80211_CMD_FRAME) received for wlx90de807a7513
+nl80211: MLME event 59 (NL80211_CMD_FRAME) on wlx90de807a7513(90:de:80:7a:75:13) A1=90:de:80:7a:75:13 A2=50:4f:3b:cc:9f:aa
+nl80211: MLME event frame - hexdump(len=191): d0 00 24 00 90 de 80 7a 75 13 50 4f 3b cc 9f aa 50 4f 3b cc 9f aa 60 00 06 02 90 de 80 7a 75 13 b0 dc ef 9f 4c 46 00 00 30 2a 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 04 01 00 01 00 15 21 2e d3 3b a2 42 e7 9f 82 a2 a5 11 dc 76 28 36 03 ab cd 01 37 64 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 0c 5a 28 5d 8a c7 dd ac cb 0d f3 f8 db aa 13 dd a0 00 8d ce e8 53 0c b7 e1 61 9e e0 f5 8b 2e 5c 56 b9 8d ec f9 11 38 d7 15 89 31 bc 24 a0 af b9 0f 09 2e 13 72 d0 a7 8f 90 0d aa 07 a2 5b 87 3f 01 06 b0 dc ef 9f 4c 46 03 08 67 69 67 61 62 79 74 65
+nl80211: Frame event
+nl80211: RX frame da=90:de:80:7a:75:13 sa=50:4f:3b:cc:9f:aa bssid=50:4f:3b:cc:9f:aa freq=2412 ssi_signal=-23 fc=0xd0 seq_ctrl=0x60 stype=13 (WLAN_FC_STYPE_ACTION) len=191
+wlx90de807a7513: Event RX_MGMT (18) received
+wlx90de807a7513: Received Action frame: SA=50:4f:3b:cc:9f:aa Category=6 DataLen=166 freq=2412 MHz
+FT: RX Action - hexdump(len=166): 02 90 de 80 7a 75 13 b0 dc ef 9f 4c 46 00 00 30 2a 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 04 01 00 01 00 15 21 2e d3 3b a2 42 e7 9f 82 a2 a5 11 dc 76 28 36 03 ab cd 01 37 64 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 0c 5a 28 5d 8a c7 dd ac cb 0d f3 f8 db aa 13 dd a0 00 8d ce e8 53 0c b7 e1 61 9e e0 f5 8b 2e 5c 56 b9 8d ec f9 11 38 d7 15 89 31 bc 24 a0 af b9 0f 09 2e 13 72 d0 a7 8f 90 0d aa 07 a2 5b 87 3f 01 06 b0 dc ef 9f 4c 46 03 08 67 69 67 61 62 79 74 65
+wlx90de807a7513: FT: Received FT Action Response: STA 90:de:80:7a:75:13 TargetAP b0:dc:ef:9f:4c:46 status 0
+FT: Response IEs - hexdump(len=151): 30 2a 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 04 01 00 01 00 15 21 2e d3 3b a2 42 e7 9f 82 a2 a5 11 dc 76 28 36 03 ab cd 01 37 64 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 0c 5a 28 5d 8a c7 dd ac cb 0d f3 f8 db aa 13 dd a0 00 8d ce e8 53 0c b7 e1 61 9e e0 f5 8b 2e 5c 56 b9 8d ec f9 11 38 d7 15 89 31 bc 24 a0 af b9 0f 09 2e 13 72 d0 a7 8f 90 0d aa 07 a2 5b 87 3f 01 06 b0 dc ef 9f 4c 46 03 08 67 69 67 61 62 79 74 65
+FT: RIC IEs - hexdump(len=0): [NULL]
+FT: RSNE - hexdump(len=42): 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 04 01 00 01 00 15 21 2e d3 3b a2 42 e7 9f 82 a2 a5 11 dc 76 28
+FT: MDE - hexdump(len=3): ab cd 01
+FT: FTE - hexdump(len=100): 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 0c 5a 28 5d 8a c7 dd ac cb 0d f3 f8 db aa 13 dd a0 00 8d ce e8 53 0c b7 e1 61 9e e0 f5 8b 2e 5c 56 b9 8d ec f9 11 38 d7 15 89 31 bc 24 a0 af b9 0f 09 2e 13 72 d0 a7 8f 90 0d aa 07 a2 5b 87 3f 01 06 b0 dc ef 9f 4c 46 03 08 67 69 67 61 62 79 74 65
+FT: FTE-MIC Control - hexdump(len=2): 00 00
+FT: FTE-MIC - hexdump(len=16): 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+FT: FTE-ANonce - hexdump(len=32): 0c 5a 28 5d 8a c7 dd ac cb 0d f3 f8 db aa 13 dd a0 00 8d ce e8 53 0c b7 e1 61 9e e0 f5 8b 2e 5c
+FT: FTE-SNonce - hexdump(len=32): 56 b9 8d ec f9 11 38 d7 15 89 31 bc 24 a0 af b9 0f 09 2e 13 72 d0 a7 8f 90 0d aa 07 a2 5b 87 3f
+FT: Parse FTE subelements - hexdump(len=18): 01 06 b0 dc ef 9f 4c 46 03 08 67 69 67 61 62 79 74 65
+FT: R1KH-ID - hexdump(len=6): b0 dc ef 9f 4c 46
+FT: SNonce - hexdump(len=32): 56 b9 8d ec f9 11 38 d7 15 89 31 bc 24 a0 af b9 0f 09 2e 13 72 d0 a7 8f 90 0d aa 07 a2 5b 87 3f
+FT: ANonce - hexdump(len=32): 0c 5a 28 5d 8a c7 dd ac cb 0d f3 f8 db aa 13 dd a0 00 8d ce e8 53 0c b7 e1 61 9e e0 f5 8b 2e 5c
+FT: Derive PMK-R1 using KDF-SHA256
+FT: PMK-R0 - hexdump(len=32): [REMOVED]
+FT: R1KH-ID - hexdump(len=6): b0 dc ef 9f 4c 46
+FT: S1KH-ID: 90:de:80:7a:75:13
+FT: PMK-R1 - hexdump(len=32): [REMOVED]
+FT: PMKR1Name - hexdump(len=16): 1e 3e c8 40 88 5d 6f e7 a5 eb 5c 86 ec 27 98 78
+FT: Derive PTK using KDF-SHA256
+FT: PMK-R1 - hexdump(len=32): [REMOVED]
+FT: SNonce - hexdump(len=32): 56 b9 8d ec f9 11 38 d7 15 89 31 bc 24 a0 af b9 0f 09 2e 13 72 d0 a7 8f 90 0d aa 07 a2 5b 87 3f
+FT: ANonce - hexdump(len=32): 0c 5a 28 5d 8a c7 dd ac cb 0d f3 f8 db aa 13 dd a0 00 8d ce e8 53 0c b7 e1 61 9e e0 f5 8b 2e 5c
+FT: BSSID=b0:dc:ef:9f:4c:46 STA-ADDR=90:de:80:7a:75:13
+FT: PTK - hexdump(len=48): [REMOVED]
+FT: PMKR1Name - hexdump(len=16): 1e 3e c8 40 88 5d 6f e7 a5 eb 5c 86 ec 27 98 78
+FT: KCK - hexdump(len=16): [REMOVED]
+FT: KEK - hexdump(len=16): [REMOVED]
+FT: TK - hexdump(len=16): [REMOVED]
+FT: PTKName - hexdump(len=16): 92 e7 be 95 30 f3 a2 e0 9a 10 dc c1 84 3a ef e3
+FT: MIC data - hexdump(len=6): 90 de 80 7a 75 13
+FT: MIC data - hexdump(len=6): b0 dc ef 9f 4c 46
+FT: MIC data - hexdump(len=1): 05
+FT: MIC data - hexdump(len=40): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 1e 3e c8 40 88 5d 6f e7 a5 eb 5c 86 ec 27 98 78
+FT: MIC data - hexdump(len=5): 36 03 ab cd 01
+FT: MIC data - hexdump(len=4): 37 64 00 03
+FT: MIC data - hexdump(len=16): 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+FT: MIC data - hexdump(len=82): 0c 5a 28 5d 8a c7 dd ac cb 0d f3 f8 db aa 13 dd a0 00 8d ce e8 53 0c b7 e1 61 9e e0 f5 8b 2e 5c 56 b9 8d ec f9 11 38 d7 15 89 31 bc 24 a0 af b9 0f 09 2e 13 72 d0 a7 8f 90 0d aa 07 a2 5b 87 3f 01 06 b0 dc ef 9f 4c 46 03 08 67 69 67 61 62 79 74 65
+SME: FT IEs - hexdump(len=147): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 1e 3e c8 40 88 5d 6f e7 a5 eb 5c 86 ec 27 98 78 36 03 ab cd 01 37 64 00 03 ec 07 7a 98 51 b9 3b 9c ff 66 3e 13 23 29 06 bd 0c 5a 28 5d 8a c7 dd ac cb 0d f3 f8 db aa 13 dd a0 00 8d ce e8 53 0c b7 e1 61 9e e0 f5 8b 2e 5c 56 b9 8d ec f9 11 38 d7 15 89 31 bc 24 a0 af b9 0f 09 2e 13 72 d0 a7 8f 90 0d aa 07 a2 5b 87 3f 01 06 b0 dc ef 9f 4c 46 03 08 67 69 67 61 62 79 74 65
+nl80211: Authenticate (ifindex=26)
+  * bssid=b0:dc:ef:9f:4c:46
+  * freq=2437
+  * SSID=A_Test_network
+  * IEs - hexdump(len=0): [NULL]
+  * Auth Type 2
+  * Local state change only
+nl80211: Authentication request send successfully
+FT: Installing PTK to the driver.
+wpa_driver_nl80211_set_key: ifindex=26 (wlx90de807a7513) alg=3 addr=0x5beb8e60cbdc key_idx=0 set_tx=1 seq_len=6 key_len=16 key_flag=0x2c
+nl80211: NEW_KEY
+nl80211: KEY_DATA - hexdump(len=16): [REMOVED]
+nl80211: KEY_SEQ - hexdump(len=6): 00 00 00 00 00 00
+   addr=b0:dc:ef:9f:4c:46
+   pairwise key
+nl80211: kernel reports: key addition failed
+nl80211: set_key failed; err=-2 No such file or directory
+FT: Failed to set PTK to the driver
+FT: Failed to set PTK prior to association - try again after reassociation
+SME: Association Request IEs - hexdump(len=189): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 be af 17 f1 d0 35 da db 56 c6 56 5a 60 4f 10 94 46 05 70 00 00 00 00 36 03 ab cd 01 37 64 00 03 75 be fa d3 fc c3 4f 49 ea 0f 32 4c 45 8a 6c 3c 5f ee 31 aa fe ba bd 0b 99 42 9d 82 b7 e1 40 2f 93 eb cf af 9c a5 6c 60 5f dd 54 d5 99 fd 0a 32 c5 fe 88 fe 72 7a fb 74 b8 be ec 06 b1 66 25 55 1a a9 76 7e f3 09 87 5c 59 63 3d ef 67 02 97 73 01 06 50 4f 3b cc 9f aa 03 08 67 69 67 61 62 79 74 65 7f 0b 00 00 0a 02 01 40 40 40 00 01 20 3b 14 51 51 53 54 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f 80 81 82
+SME: Association Request IEs after FT IE removal - hexdump(len=35): 7f 0b 00 00 0a 02 01 40 40 40 00 01 20 3b 14 51 51 53 54 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f 80 81 82
+SME: Association Request IEs after FT override - hexdump(len=189): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 1e 3e c8 40 88 5d 6f e7 a5 eb 5c 86 ec 27 98 78 46 05 70 00 00 00 00 36 03 ab cd 01 37 64 00 03 ec 07 7a 98 51 b9 3b 9c ff 66 3e 13 23 29 06 bd 0c 5a 28 5d 8a c7 dd ac cb 0d f3 f8 db aa 13 dd a0 00 8d ce e8 53 0c b7 e1 61 9e e0 f5 8b 2e 5c 56 b9 8d ec f9 11 38 d7 15 89 31 bc 24 a0 af b9 0f 09 2e 13 72 d0 a7 8f 90 0d aa 07 a2 5b 87 3f 01 06 b0 dc ef 9f 4c 46 03 08 67 69 67 61 62 79 74 65 7f 0b 00 00 0a 02 01 40 40 40 00 01 20 3b 14 51 51 53 54 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f 80 81 82
+wlx90de807a7513: Trying to associate with b0:dc:ef:9f:4c:46 (SSID='A_Test_network' freq=2437 MHz)
+CTRL-DEBUG: ctrl_sock-sendmsg: sock=12 sndbuf=212992 outq=0 send_len=80
+CTRL_IFACE monitor sent successfully to /tmp/wpa_ctrl_949309-12\x00
+wlx90de807a7513: State: COMPLETED -> ASSOCIATING
+nl80211: Set wlx90de807a7513 operstate 1->0 (DORMANT)
+netlink: Operstate: ifindex=26 linkmode=-1 (no change), operstate=5 (IF_OPER_DORMANT)
+WMM AC: WMM AC is disabled
+WPA: set own WPA/RSN IE - hexdump(len=40): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 1e 3e c8 40 88 5d 6f e7 a5 eb 5c 86 ec 27 98 78
+wlx90de807a7513: RSN: clearing own RSNXE
+nl80211: Associate (ifindex=26)
+  * bssid=b0:dc:ef:9f:4c:46
+  * freq=2437
+  * SSID=A_Test_network
+  * IEs - hexdump(len=189): 30 26 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 04 00 00 01 00 1e 3e c8 40 88 5d 6f e7 a5 eb 5c 86 ec 27 98 78 46 05 70 00 00 00 00 36 03 ab cd 01 37 64 00 03 ec 07 7a 98 51 b9 3b 9c ff 66 3e 13 23 29 06 bd 0c 5a 28 5d 8a c7 dd ac cb 0d f3 f8 db aa 13 dd a0 00 8d ce e8 53 0c b7 e1 61 9e e0 f5 8b 2e 5c 56 b9 8d ec f9 11 38 d7 15 89 31 bc 24 a0 af b9 0f 09 2e 13 72 d0 a7 8f 90 0d aa 07 a2 5b 87 3f 01 06 b0 dc ef 9f 4c 46 03 08 67 69 67 61 62 79 74 65 7f 0b 00 00 0a 02 01 40 40 40 00 01 20 3b 14 51 51 53 54 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f 80 81 82
+  * WPA Versions 0x2
+  * pairwise=0xfac04
+  * group=0xfac04
+  * akm=0xfac04
+  * htcaps - hexdump(len=26): 63 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  * htcaps_mask - hexdump(len=26): 63 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  * vhtcaps - hexdump(len=12): 00 00 00 00 00 00 00 00 00 00 00 00
+  * vhtcaps_mask - hexdump(len=12): 00 00 00 00 00 00 00 00 00 00 00 00
+  * prev_bssid=50:4f:3b:cc:9f:aa
+wlx90de807a7513: nl80211: MLME command failed (assoc): ret=-2 (No such file or directory)
+nl80211: Scan result dump
+nl80211: 0 50:4f:3b:cc:9f:aa 2412 [assoc]
+wlx90de807a7513: SME: Association request to the driver failed
+CTRL-DEBUG: ctrl_sock-sendmsg: sock=12 sndbuf=212992 outq=0 send_len=45
+CTRL_IFACE monitor sent successfully to /tmp/wpa_ctrl_949309-12\x00
+BSSID 00:00:00:00:00:00 ignore list count incremented to 3, ignoring for 60 seconds
+wlx90de807a7513: Consecutive connection failures: 1 --> request scan in 100 ms
+wlx90de807a7513: Setting scan request: 0.100000 sec
+wlx90de807a7513: State: ASSOCIATING -> DISCONNECTED
+nl80211: Set wlx90de807a7513 operstate 0->0 (DORMANT)
+netlink: Operstate: ifindex=26 linkmode=-1 (no change), operstate=5 (IF_OPER_DORMANT)
+RTM_NEWLINK: ifi_index=26 ifname=wlx90de807a7513 operstate=5 linkmode=1 ifi_family=0 ifi_flags=0x11003 ([UP][LOWER_UP])
+wlx90de807a7513: State: DISCONNECTED -> SCANNING
+wlx90de807a7513: Starting AP scan for wildcard SSID
+wlx90de807a7513: Add radio work 'scan'@0x5beb8e5e28f0
+wlx90de807a7513: First radio work item in the queue - schedule start immediately
+wlx90de807a7513: Starting radio work 'scan'@0x5beb8e5e28f0 after 0.000034 second wait
+wlx90de807a7513: nl80211: scan request
+nl80211: Scan SSID
+nl80211: Scan extra IEs - hexdump(len=24): 7f 0b 00 00 0a 02 01 40 40 40 00 01 20 72 00 dd 07 50 6f 9a 16 03 01 03
+Scan requested (ret=0) - scan timeout 30 seconds
+nl80211: Event message available
+nl80211: Drv Event 33 (NL80211_CMD_TRIGGER_SCAN) received for wlx90de807a7513
+wlx90de807a7513: nl80211: Scan trigger
+wlx90de807a7513: Event SCAN_STARTED (47) received
+wlx90de807a7513: Own scan request started a scan in 0.000164 seconds
+CTRL-DEBUG: ctrl_sock-sendmsg: sock=12 sndbuf=212992 outq=0 send_len=24
+CTRL_IFACE monitor sent successfully to /tmp/wpa_ctrl_949309-12\x00
+RTM_NEWLINK: ifi_index=26 ifname=wlx90de807a7513 wext ifi_family=0 ifi_flags=0x11003 ([UP][LOWER_UP])
+nl80211: Event message available
+nl80211: Drv Event 34 (NL80211_CMD_NEW_SCAN_RESULTS) received for wlx90de807a7513
+wlx90de807a7513: nl80211: New scan results available
+nl80211: Scan probed for SSID ''
+nl80211: Scan included frequencies: 2412 2417 2422 2427 2432 2437 2442 2447 2452 2457 2462 2467 2472 5180 5200 5220 5240 5260 5280 5300 5320 5660 5680 5700 5720 5745 5765 5785 5805 5825
+wlx90de807a7513: Event SCAN_RESULTS (3) received
+wlx90de807a7513: Scan completed in 8.671608 seconds
+nl80211: Received scan results (9 BSSes)
+nl80211: Scan results indicate BSS status with 50:4f:3b:cc:9f:aa as associated
+nl80211: Local state (not associated) does not match with BSS state
+nl80211: Clear possible state mismatch (50:4f:3b:cc:9f:aa)
+wlx90de807a7513: BSS: Start scan result update 6
+BSS: 50:4f:3b:cc:9f:aa changed freq 2412 --> 5745
+BSS: 50:4f:3b:cc:9f:aa has multiple entries in the scan results - select the most current one
+Previous last_update: 88039.508276 (freq 5745)
+New last_update: 88040.965276 (freq 2412 assoc)
+Accept this BSS entry since it looks more current than the previous update
+BSS: 50:4f:3b:cc:9f:aa changed freq 5745 --> 2412
+wlx90de807a7513: BSS: Remove id 12 BSSID 9c:9d:7e:cb:a0:d4 SSID 'Xiaomi_A0D3' due to no match in scan
+CTRL-DEBUG: ctrl_sock-sendmsg: sock=12 sndbuf=212992 outq=0 send_len=43
+CTRL_IFACE monitor sent successfully to /tmp/wpa_ctrl_949309-12\x00
+wlx90de807a7513: BSS: Remove id 17 BSSID 6c:5a:b0:34:31:da SSID 'TP-Link_31DA' due to no match in scan
+CTRL-DEBUG: ctrl_sock-sendmsg: sock=12 sndbuf=212992 outq=0 send_len=43
+CTRL_IFACE monitor sent successfully to /tmp/wpa_ctrl_949309-12\x00
+wlx90de807a7513: BSS: Remove id 21 BSSID c8:78:7d:70:24:66 SSID 'DIR-X1530' due to no match in scan
+CTRL-DEBUG: ctrl_sock-sendmsg: sock=12 sndbuf=212992 outq=0 send_len=43
+CTRL_IFACE monitor sent successfully to /tmp/wpa_ctrl_949309-12\x00
+wlx90de807a7513: BSS: Remove id 26 BSSID c4:2b:44:11:28:89 SSID '' due to no match in scan
+CTRL-DEBUG: ctrl_sock-sendmsg: sock=12 sndbuf=212992 outq=768 send_len=43
+CTRL_IFACE monitor sent successfully to /tmp/wpa_ctrl_949309-12\x00
+wlx90de807a7513: BSS: Remove id 35 BSSID 58:f8:5c:84:42:c8 SSID 'RT-GPON-42C8' due to no match in scan
+CTRL-DEBUG: ctrl_sock-sendmsg: sock=12 sndbuf=212992 outq=0 send_len=43
+CTRL_IFACE monitor sent successfully to /tmp/wpa_ctrl_949309-12\x00
+BSS: last_scan_res_used=8/64
+wlx90de807a7513: New scan results available (own=1 ext=0)
+CTRL-DEBUG: ctrl_sock-sendmsg: sock=12 sndbuf=212992 outq=0 send_len=24
+CTRL_IFACE monitor sent successfully to /tmp/wpa_ctrl_949309-12\x00
+WPS: Unknown Vendor Extension (Vendor ID 9442)
+WPS: Unknown Vendor Extension (Vendor ID 9442)
+WPS: Unknown Vendor Extension (Vendor ID 9442)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#CC=gcc make
+
+make clean
+make CC=gcc
+
+не сработало
+
+export STAGING_DIR=/home/andrey/openwrt/staging_dir
+export PATH=$STAGING_DIR/toolchain-aarch64_cortex-a53_gcc-13.3.0_musl/bin:$PATH
+export STAGING_DIR=/home/andrey/openwrt/staging_dir
+export TOOLCHAIN=$STAGING_DIR/toolchain-aarch64_cortex-a53_gcc-13.3.0_musl
+export SYSROOT=$TOOLCHAIN/aarch64-openwrt-linux-musl
+export PATH=$TOOLCHAIN/bin:$PATH
+export HOSTAPD_OPENSSL_CFLAGS="-I$STAGING_DIR/target-aarch64_cortex-a53_musl/usr/include"
+export HOSTAPD_OPENSSL_LIBS="-L$STAGING_DIR/target-aarch64_cortex-a53_musl/usr/lib -lssl -lcrypto"
+
+
+make CC=aarch64-openwrt-linux-musl-gcc \
+     CROSS_COMPILE=aarch64-openwrt-linux-musl- \
+     CFLAGS_EXTRA="$HOSTAPD_OPENSSL_CFLAGS" \
+     LDFLAGS_EXTRA="$HOSTAPD_OPENSSL_LIBS"
+
+make CC=/home/andrey/openwrt/staging_dir/toolchain-aarch64_cortex-a53_gcc-13.3.0_musl/bin/aarch64-openwrt-linux-musl-gcc
+
+
+export STAGING_DIR=/home/andrey/openwrt/staging_dir
+export TOOLCHAIN=$STAGING_DIR/toolchain-aarch64_cortex-a53_gcc-13.3.0_musl
+export SYSROOT=$TOOLCHAIN/aarch64-openwrt-linux-musl
+export TARGET=$STAGING_DIR/target-aarch64_cortex-a53_musl
+
+export PATH=$TOOLCHAIN/bin:$PATH
+
+export CC="aarch64-openwrt-linux-musl-gcc"
+export CFLAGS="-I$TARGET/usr/include"
+export LDFLAGS="-L$TARGET/usr/lib"
+export LIBS="-lssl -lcrypto"
+make clean
+make CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" LIBS="$LIBS"
+

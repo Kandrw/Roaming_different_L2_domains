@@ -1,0 +1,173 @@
+ 
+CONFIG_IEEE80211R
+CONFIG_IEEE80211R_AP
+wpa_ft_process_response
+
+CONFIG_IEEE80211R_AP_L2_DIFFERENT_DOMAINS
+
+
+
+
+wpa_ft_rrb_rx_request_cb
+    wpa_ft_send_rrb_auth_resp
+
+
+
+
+
+wpa_ft_rrb_send
+
+
+
+
+	return wpa_auth->cb->send_ether(wpa_auth->cb_ctx, dst, ETH_P_RRB,
+					data, data_len);
+
+
+
+
+		.send_ether = hostapd_wpa_auth_send_ether,
+                    l2_packet_send
+
+
+
+
+
+
+
+
+
+l2_packet_init
+	eloop_register_read_sock(l2->fd, l2_packet_receive, l2, NULL);
+
+
+hostapd_setup_wpa
+	l2_packet_init (hostapd_rrb_receive
+		wpa_ft_rrb_rx
+
+			if FT_PACKET_REQUEST
+				wpa_ft_rrb_rx_request
+					= wpa_ft_rrb_rx_request_cb
+					wpa_ft_process_auth_req
+					wpa_ft_send_rrb_auth_resp
+						wpa_ft_rrb_send
+							send_ether = hostapd_wpa_auth_send_ether
+								l2_packet_send
+									sendto(l2->fd, buf, len, 0, (struct sockaddr *) &ll, sizeof(ll));
+			if FT_PACKET_RESPONSE
+				Посылает ответ клиенту о статусе если получает ответ
+				wpa_ft_action_send
+					send_ft_action = hostapd_wpa_auth_send_ft_action
+						hostapd_drv_send_mlme
+							send_mlme = driver_nl80211_send_mlme
+								wpa_driver_nl80211_send_mlme
+									nl80211_send_frame_cmd
+
+
+wpa_ft_rrb_rx
+	wpa_ft_rrb_rx_request
+		wpa_ft_send_rrb_auth_resp
+
+wpa_ft_rrb_rx_request
+	sm->ft_pending_cb = wpa_ft_rrb_rx_request_cb
+		wpa_ft_send_rrb_auth_resp
+
+
+
+ieee802_11_mgmt
+	handle_action
+		wpa_ft_action_rx
+			wpa_ft_rrb_send
+wpa_supplicant_event
+	hostapd_action_rx
+		wpa_ft_action_rx
+			wpa_ft_rrb_send
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

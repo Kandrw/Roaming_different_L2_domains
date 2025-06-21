@@ -1,0 +1,146 @@
+
+
+
+
+    статус подключения на ax3000t
+iw dev wlan02g station dump
+
+удалить если надо: ifconfig  wlan02g down; iw dev wlan02g del
+
+
+            ax3000t 192.168.10.10 50:4F:3B:CC:9F:AA
+    vap 50:4F:3B:CC:9F:A8
+
+    scp /home/andrey/openwrt/build_dir/target-aarch64_cortex-a53_musl/hostapd-wpad-basic-mbedtls/hostapd-2024.09.15~5ace39b0/wpad root@192.168.10.10:/tmp/hostapd
+    scp /home/andrey/Diplom/config/hostapd/ax3000t/hostapd_ax3000t_diff_l2r_1.conf root@192.168.10.10:/tmp/hostapd_ax3000t_diff_l2r.conf
+
+
+    iw phy phy0 interface add wlan02g type __ap
+    ifconfig  wlan02g up
+    chmod +x /tmp/hostapd
+    /tmp/hostapd -dd  -t -f /tmp/hostapd.log -B /tmp/hostapd_ax3000t_diff_l2r.conf
+
+    route add -net 192.168.20.0 netmask 255.255.255.0 gw 192.168.10.216 - ip интерфейса к которому подключен ax3000t
+
+            ax3000t 192.168.20.10 CC:D8:43:B7:03:30
+    vap CC:D8:43:B7:03:32
+
+    scp /home/andrey/openwrt/build_dir/target-aarch64_cortex-a53_musl/hostapd-wpad-basic-mbedtls/hostapd-2024.09.15~5ace39b0/wpad root@192.168.20.10:/tmp/hostapd
+    scp /home/andrey/Diplom/config/hostapd/ax3000t/hostapd_ax3000t_diff_l2r_2.conf root@192.168.20.10:/tmp/hostapd_ax3000t_diff_l2r.conf
+
+
+    iw phy phy0 interface add wlan02g type __ap
+    ifconfig  wlan02g up
+    chmod +x /tmp/hostapd
+    /tmp/hostapd -dd  -t -f /tmp/hostapd.log -B /tmp/hostapd_ax3000t_diff_l2r.conf
+
+    route add -net 192.168.10.0 netmask 255.255.255.0 gw 192.168.20.175
+
+
+            client
+
+
+echo PHY1=phy$(iw dev | grep -B 1 wlx90de807a7513 | grep -oP 'phy#\K\d+')
+ip netns add client_ns
+iw phy phy$(iw dev | grep -B 1 wlx90de807a7513 | grep -oP 'phy#\K\d+') set netns name client_ns
+#ip link set wlx90de807a7513 netns client_ns
+ip netns exec client_ns bash
+
+iwconfig wlx90de807a7513
+ifconfig wlx90de807a7513 up
+    если проблема: SIOCSIFFLAGS: Операция не позволяется из-за RF-kill
+    rfkill list
+    0: : Wireless LAN
+            Soft blocked: yes
+            Hard blocked: no
+    1: hci0: Bluetooth
+            Soft blocked: no
+            Hard blocked: no
+    4: phy3: Wireless LAN
+            Soft blocked: yes
+            Hard blocked: no
+    Разблокировка устройства
+        sudo rfkill unblock all
+    или только wifi
+        sudo rfkill unblock wifi
+
+
+
+wpa_supplicant -dd -B -i wlx90de807a7513 -c /home/andrey/Diplom/config/wpa_supplicant/wpa3.conf
+wpa_cli -i wlx90de807a7513 scan_results
+wpa_cli -i wlx90de807a7513 status
+
+    роумиг over ds
+ft_ds mac
+    роумиг over air
+roam mac
+
+
+
+
+
+
+        разрешить маршрут
+#ip route add 192.168.20.0/24 via 192.168.1.5
+#ip route add 192.168.1.0/24 via 192.168.20.7
+
+через сетевые правила
+iptables -A FORWARD -i enp3s0 -o enx00e04c36059e -j ACCEPT
+iptables -A FORWARD -i enx00e04c36059e -o enp3s0 -j ACCEPT
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

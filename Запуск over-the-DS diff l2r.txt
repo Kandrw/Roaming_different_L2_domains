@@ -1,0 +1,131 @@
+
+
+
+        выдать ip на ax3000t через dhcp-server если пинг до 192.168.1.10 не идет, подключал во второй порт справа
+    ./dhcp/server/dhcpd -cf ./config/dhcp/dhcpd.conf -pf /var/run/dhcpd.pid enp3s0 &
+    пинг скорее всего все равно не будет проходить
+
+        Подготовка
+    ip link add name br0 type bridge
+    ip addr add 192.168.1.20/24 dev br0
+    brctl addif br0 enp3s0
+    ifconfig br0 up
+
+
+
+        запуск dhcp server
+из /home/andrey/Diplom
+./dhcp/server/dhcpd -cf ./config/dhcp/dhcpd.conf -pf /var/run/dhcpd.pid br0 &
+ps aux | grep dhcp
+
+
+        ax3000t
+    сборка из /home/andrey/openwrt
+make -j$(nproc) package/hostapd/compile
+
+scp /home/andrey/openwrt/build_dir/target-aarch64_cortex-a53_musl/hostapd-wpad-basic-mbedtls/hostapd-2024.09.15~5ace39b0/wpad root@192.168.1.10:/tmp/hostapd
+scp /home/andrey/Diplom/config/hostapd/hostapd_ax3000t_diff_l2r.conf root@192.168.1.10:/tmp/hostapd_ax3000t_diff_l2r.conf
+
+ssh root@192.168.1.10
+    2097152
+iw phy phy0 interface add wlan02g type __ap
+ifconfig  wlan02g up
+    удалить если надо: ifconfig  wlan02g down; iw dev wlan02g del
+
+chmod +x /tmp/hostapd
+
+для запуска необходим /var/run/hostapd-phy0-ap0.vlan - можно создать если настроить интерфейс через web
+
+/tmp/hostapd -dd  -t -f /tmp/hostapd.log -P  /tmp/pid.pid -B /tmp/hostapd_ax3000t_diff_l2r.conf
+    or
+/tmp/hostapd -dd  -t -f /tmp/hostapd.log -B /tmp/hostapd_ax3000t_diff_l2r.conf
+
+    статус подключения на ax3000t
+iw dev wlan02g station dump
+
+
+        wlp0s20f3
+    iw dev wlp0s20f3 set type ap
+    ifconfig wlp0s20f3 up
+    iwconfig wlp0s20f3
+
+    Запуск из /home/andrey/Diplom
+
+rm /home/andrey/hostapd_wlp0s20f3.log; ./hostap/hostapd/hostapd -dd  -t -f /home/andrey/hostapd_wlp0s20f3.log -P  /run/hostapd.wlp0s20f3.pid -B config/hostapd/hostapd_wlp0s20f3_diff_l2r.conf
+ps aux | grep hostapd
+
+./hostap/hostapd/hostapd_cli -i wlp0s20f3
+
+
+
+
+
+        client
+
+
+echo PHY1=phy$(iw dev | grep -B 1 wlx90de807a7513 | grep -oP 'phy#\K\d+')
+ip netns add client_ns
+iw phy phy$(iw dev | grep -B 1 wlx90de807a7513 | grep -oP 'phy#\K\d+') set netns name client_ns
+#ip link set wlx90de807a7513 netns client_ns
+ip netns exec client_ns bash
+
+iwconfig wlx90de807a7513
+ifconfig wlx90de807a7513 up
+    если проблема: SIOCSIFFLAGS: Операция не позволяется из-за RF-kill
+    rfkill list
+    0: : Wireless LAN
+            Soft blocked: yes
+            Hard blocked: no
+    1: hci0: Bluetooth
+            Soft blocked: no
+            Hard blocked: no
+    4: phy3: Wireless LAN
+            Soft blocked: yes
+            Hard blocked: no
+    Разблокировка устройства
+        sudo rfkill unblock all
+    или только wifi
+        sudo rfkill unblock wifi
+
+
+
+wpa_supplicant -dd -B -i wlx90de807a7513 -c /home/andrey/Diplom/config/wpa_supplicant/wpa.conf
+wpa_cli -i wlx90de807a7513 scan_results
+wpa_cli -i wlx90de807a7513 status
+
+    роумиг over ds
+ft_ds mac
+    роумиг over air
+roam mac
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
